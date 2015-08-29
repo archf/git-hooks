@@ -13,10 +13,10 @@ Just like this:
   * the file will be copied in .git.hooks:
 
 Why copy? Becauses it allows you to append a command at the end of one of
-your hooks to execute a scripts that exists in the repo you just cloned.
+your hooks to execute scripts that exist in the repo you just cloned.
 
 Before you start, run `git hooks` to show detected hows and the help menu.
 
 # Installation
 
-Put it somewhere in your path. I like to install those scripts in `~/bin` whilst `~/bin` is in your path
+Put it somewhere in your path. I like to install those scripts in `~/bin` whilst `~/bin` is in your path.
