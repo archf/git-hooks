@@ -1,77 +1,56 @@
 #!/bin/bash
 
-###############################################################################
-### validations
-###############################################################################
-
-# check if invoked while in a git dir
+  # check if invoked while in a git dir
 GITDIR=$(git rev-parse --git-dir)
 if [[ ! $? -eq 0 ]]; then
   echo "git hooks commands must be run inside a git repository...aborting"
   exit 1
 fi
 
-# retrieve templatedir path
-TEMPLATEDIR=$(git config --global --get init.templatedir)
+function _validate_templatedir {
+  # retrieve templatedir path
+  TEMPLATEDIR=$(git config --global --get init.templatedir)
+  if [[ $? != 0 ]]; then
+    echo "No 'init.templatedir' option found in your gitconfig!"
+    exit 1
+  fi
+}
 
-if [[ $? ]]; then
-  echo "found templatedir: ${TEMPLATEDIR}...ok"
-  echo
-  FILES="$(eval find ${TEMPLATEDIR}/hooks -type f)"
-else
-  echo "no templatedir found in your gitconfig"
-fi
-
-###############################################################################
-### functions
-###############################################################################
-
-function show
-{
+function _show {
+  _validate_templatedir
   echo "List of hooks found templatedir: "
   echo "${FILES}"
 }
 
-function install
-{
+function _install {
+  _validate_templatedir
 
-  # # validate that there are indeed hooks to install
-  # [[ -n $FILES ]] || echo "Your hook folder '${TEMPLATEDIR}' is empty! There
-  # are no hooks to be managed. Aborting installation." && exit 1
-
-  echo "backing up hooks from templatedir if they already exists in \
-  '.git/hooks'"
-
-  # creating a .git/hooks and .git/hooks.old directory if not already existing
+  # creating a .git/hooks and .git/hooks.old directory
   mkdir -p $GITDIR/hooks
   mkdir -p $GITDIR/hooks.old
 
-  for FILE in $FILES;
-  do
-    f=$(basename $FILE)
-    if [[ -f ${GITDIR}/hooks.old/${f} ]]; then
-      echo "${f} was found in hooks.old... skipping"
+  FILES=($(eval find ${TEMPLATEDIR}/hooks -type f))
+  for FILE in "${FILES[@]}"; do
+    f="${FILE##*/}"
+    if [[ -f ${GITDIR}/hooks.old/${f}  && ! $FORCE ]]; then
+      echo "${GITDIR}/hooks/${f} was found in ${GITDIR}/hooks.old... skipping"
     else
-      [[ -f ${GITDIR}/hooks/${f} ]] && mv ${GITDIR}/hooks/${f} ${GITDIR}/hooks.old/${f}
-      cp ${FILE} ${GITDIR}/hooks/${f}
-      chmod +x ${GITDIR}/hooks/${f}
-      [[ $? ]]&& echo "${f} hook installed"
+      echo "backup '${GITDIR}/hooks/${f}' to '${GITDIR}/hooks.old/'"
+      [[ -f ${GITDIR}/hooks/${f} ]] && cp ${GITDIR}/hooks/${f} ${GITDIR}/hooks.old/${f}
+      install --mode=775 ${FILE} ${GITDIR}/hooks/${f}
+      [[ $? ]] && echo "${f} hook installed to '${GITDIR}/hooks/${f}'!"
     fi
   done
-
-  echo "... all done!"
 }
 
-function restore
-{
+function _restore {
   echo "attempting to restore hooks found in '.git/hooks.old'..."
   if [[ ! -d ${GITDIR}/hooks.old ]]; then
-    echo "Error: missing hooks.old, no previous hooks to restore"
+    echo "Error: missing ${GITDIR}/hooks.old/${GITDIR}/hooks.old! Nothing to \
+    restore..."
     exit 1
   fi
-
-  for FILE in $FILES;
-  do
+  for FILE in $FILES; do
     f=$(basename $FILE)
     if [[ -f ${GITDIR}/hooks.old/${f} ]]; then
       echo "${f} was found in hooks.old... restoring"
@@ -81,51 +60,43 @@ function restore
       backed up in the first time"
     fi
   done
-
-  echo
   echo "... all done!"
 }
 
-function help
-{
-  echo "git hooks"
-  echo "    A custom git command to managed the personal hooks of a user"
-  echo "    see https://github.com/archf/bin"
-  echo
-  echo "   (no command) Default behavior is to show the list of hooks"
-  echo "                 found in the sure templatedir and show this help"
-  echo
-  echo "commands:"
-  echo
-  echo "git hooks (show | install | restore )"
-  echo
-  echo "    show        List hooks found in 'templatedir'"
-  echo
-  echo "    install     Install hooks found in a templatedir into a given repo"
-  echo "                The command should be run from within a repository"
-  echo "                Any found hooks are moved to .git/hooks.old'"
-  echo
-  echo "    restore     Restore hooks moved to '.git/hooks.old' back to '.git/hooks'"
-  echo
-  echo "    -h |--help  Show this help menu"
-}
+function _help() { echo "${__doc__:-No usage available}" 1>&2; }
 
-###############################################################################
-### cli parsing
-###############################################################################
-case $1 in
-  install )
-    install
-    ;;
-  restore )
-    restore
-    ;;
-  -h|--help )
-    help
-    ;;
-  * )
-    show
-    echo
-    help
-    ;;
-esac
+__doc__="\
+GIT HOOKS
+  A custom git command to manage a git repository hooks.
+  See https://github.com/archf/git-hooks.
+
+USAGE
+  git hooks [OPTIONS] CMD
+
+OPTIONS
+  -h|--help   Show this help menu.
+  -f|--force  Force hook update.
+
+CMD
+  show        List git 'templatedir' available hooks.
+  install     Install hooks found inside git 'templatedir' in repository.
+              Current hooks are backed up to '.git/hooks.old'. If the hook is
+              already found in '.git/hooks.old' it will be skipped unless you
+              delete it manually or use the --force option.
+  restore     Restore previous set of hooks from '.git/hooks.old'.
+  help        Show this help menu.
+"
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    install) cmd=install;;
+    restore) cmd=restore;;
+    -h|--help|help) cmd=help;;
+    -f|--force) FORCE=true;;
+    *) show;;
+  esac
+  shift
+done
+
+# run
+_$cmd

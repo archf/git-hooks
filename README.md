@@ -2,18 +2,18 @@
 
 A simple script to manage your hooks.
 
-## Do I need this?
+## Why do I need this?
 
-Rerunning `git init` within a git repository will cause new files in git
-`templatedir` currently missing in `.git` to be added.
+Rerunning `git init` within an existing git repository will result in only
+git 'templatedir' **new hooks** actually missing in `.git/hooks` to be added.
+Thus, exising hooks are not updated!
 
-This means that files `/.git/hooks/*` files are not **updated**. You have to
-manually delete a file to force a new copy into the git repo though. This
-script streamline this process.
+You would have to manually delete a file to force a new copy into the git
+repository. This script streamline this process.
 
-## How it work!
+## How does it work!
 
-Just like this:
+In this order
 
 1. Lookup your `.gitconfig` for the `templatedir` parameter. You can retreive
    current value using `git config --global init.templatedir` command. If
@@ -30,31 +30,30 @@ run `git hooks` to show detected hooks in your configured `templatedir` as well
 as the help menu.
 
 ```bash
-git hooks
-    A custom git command to managed the personal hooks of a user
-    see https://github.com/archf/bin
+GIT HOOKS
+  A custom git command to manage a git repository hooks.
+  See https://github.com/archf/git-hooks.
 
-   (no command) Default behavior is to show the list of hooks
-                 found in the sure templatedir and show this help
+USAGE
+  git hooks [OPTIONS] CMD
 
-commands:
+OPTIONS
+  -h|--help   Show this help menu.
+  -f|--force  Force hook update.
 
-git hooks (show | install | restore )
-
-    show        List hooks found in 'templatedir'
-
-    install     Install hooks found in a templatedir into a given repo
-                The command should be run from within a repository
-                Any found hooks are moved to .git/hooks.old'
-
-    restore     Restore hooks moved to '.git/hooks.old' back to '.git/hooks'
-
-    -h |--help  Show this help menu
+CMD
+  show        List git 'templatedir' available hooks.
+  install     Install hooks found inside git 'templatedir' in repository.
+              Current hooks are backed up to '.git/hooks.old'. If the hook is
+              already found in '.git/hooks.old' it will be skipped unless you
+              delete it manually or use the --force option.
+  restore     Restore previous set of hooks from '.git/hooks.old'.
+  help        Show this help menu.
 ```
 
 ## FAQ
 
-How to locate your current templatedir?
+How to locate your current 'templatedir'?
 
 ```bash
 git config --global init.templatedir
@@ -62,17 +61,16 @@ git config --global init.templatedir
 
 # Installation
 
-Put this script somewhere in your path. I like to install those scripts in
-`~/bin` whilst `~/bin` is in your path.
-
-A Makefile is provided to do just that.
-
-Clone this repository.
+Clone this repository somewhere and put this script in your PATH.
 
 ```bash
 git clone git@github.com:archf/git-hooks.git
 ```
-And create symlink to script inside git repository.
+
+Personally I like to install those kind of scripts in
+`~/bin` whilst `~/bin` is in your PATH.
+
+Quickly add a symlink in `~/bin`:
 
 ```bash
 make install
