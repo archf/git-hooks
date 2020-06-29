@@ -1,25 +1,31 @@
 #!/bin/bash
 
-  # check if invoked while in a git dir
+die_with_status () {
+	local status=$1
+  shift; printf >&2 '%s\n' "$*"; exit "$status"
+}
+
+die() { die_with_status 1 "$@"; }
+
+# check if invoked while in a git dir
 GITDIR=$(git rev-parse --git-dir)
 if [[ ! $? -eq 0 ]]; then
-  echo "git hooks commands must be run inside a git repository...aborting"
-  exit 1
+  die "git hooks commands must be run inside a git repository...aborting"
 fi
 
 function _validate_templatedir {
   # retrieve templatedir path
   TEMPLATEDIR=$(git config --global --get init.templatedir)
   if [[ $? != 0 ]]; then
-    echo "No 'init.templatedir' option found in your gitconfig!"
-    exit 1
+    die "No 'init.templatedir' option found in your gitconfig!"
   fi
+  FILES=($(eval find ${TEMPLATEDIR}/hooks -type f))
 }
 
 function _show {
   _validate_templatedir
-  echo "List of hooks found templatedir: "
-  echo "${FILES}"
+  echo "List of hooks found in 'templatedir': "
+  printf '%s\n' "${FILES[@]}"
 }
 
 function _install {
@@ -29,7 +35,6 @@ function _install {
   mkdir -p $GITDIR/hooks
   mkdir -p $GITDIR/hooks.old
 
-  FILES=($(eval find ${TEMPLATEDIR}/hooks -type f))
   for FILE in "${FILES[@]}"; do
     f="${FILE##*/}"
     if [[ -f ${GITDIR}/hooks.old/${f}  && ! $FORCE ]]; then
@@ -46,9 +51,8 @@ function _install {
 function _restore {
   echo "attempting to restore hooks found in '.git/hooks.old'..."
   if [[ ! -d ${GITDIR}/hooks.old ]]; then
-    echo "Error: missing ${GITDIR}/hooks.old/${GITDIR}/hooks.old! Nothing to \
+    die "Error: missing ${GITDIR}/hooks.old/${GITDIR}/hooks.old! Nothing to \
     restore..."
-    exit 1
   fi
   for FILE in $FILES; do
     f=$(basename $FILE)
@@ -67,7 +71,7 @@ function _help() { echo "${__doc__:-No usage available}" 1>&2; }
 
 __doc__="\
 GIT HOOKS
-  A custom git command to manage a git repository hooks.
+  A custom git command to manage git repository hooks.
   See https://github.com/archf/git-hooks.
 
 USAGE
@@ -93,10 +97,10 @@ while [ $# -gt 0 ]; do
     restore) cmd=restore;;
     -h|--help|help) cmd=help;;
     -f|--force) FORCE=true;;
-    *) show;;
+    *) cmd=show;;
   esac
   shift
 done
 
 # run
-_$cmd
+_${cmd:-show}
