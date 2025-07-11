@@ -1,5 +1,5 @@
-BIN = ~/bin/git-hooks
-SUCCESS_MSG = "All done! Make sure '~/bin' is in your PATH"
+BIN = ~/.local/bin/git-hooks
+SUCCESS_MSG = "All done! Make sure '~/.local/bin' is in your PATH"
 
 .PHONY: install update uninstall
 
