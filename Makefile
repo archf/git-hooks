@@ -1,4 +1,4 @@
-BIN = ~/.local/bin/git-hooks
+BIN = ~/.local/bin/git-hooksctl
 SUCCESS_MSG = "All done! Make sure '~/.local/bin' is in your PATH"
 
 .PHONY: install update uninstall
@@ -9,7 +9,7 @@ update:
 install: $(BIN)
 
 $(BIN):
-	ln -s $(CURDIR)/$(@F) $@
+	ln -sf $(CURDIR)/$(@F) $@
 	@echo $(SUCCESS_MSG)
 
 uninstall:
